@@ -36,3 +36,10 @@
 - Added OC content: +28 rentals, +28 jobs, +24 marketplace, +12 providers, +10 threads. (Totals: 88 housing, 88 jobs, 84 marketplace, 52 providers, 50 threads.)
 - Detail pages read the full dataset so any listing resolves regardless of active county.
 - Fixed esc() ampersand-escaping (regressed by an earlier sed).
+
+## OpenStreetMap directory ingestion (11 JUL 26)
+- scripts/osm-ingest.mjs — Overpass API ingester (LA+OC cities → provider shape, source/source_url/ODbL, dedupe).
+- scripts/merge-osm.mjs — folds osm-businesses.json into the live directory; scripts/README-OSM.md.
+- Businesses come in as community-listed / unclaimed with a "Claim this business" funnel (the moat).
+- UI: "Source: OpenStreetMap" citation on cards + profiles; rating guarded for unrated OSM records; ODbL footer attribution.
+- Seeded 14 labeled sample OSM businesses (LA+OC) so the pattern renders now; run the ingester for live data.

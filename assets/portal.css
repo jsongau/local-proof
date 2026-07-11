@@ -568,3 +568,9 @@ body{font-size:12.5px}
 .county-toggle a{color:#cfd8e6;font-size:11px;font-weight:600;padding:2px 9px;border-radius:10px}
 .county-toggle a:hover{color:#fff;text-decoration:none}
 .county-toggle a.on{background:#fff;color:var(--navy)}
+
+/* ===== OSM source citation + attribution ===== */
+.src-cite{font-size:11px;color:var(--faint);margin:4px 0}
+.src-cite a{color:var(--link)}
+.foot-attr{border-top:1px solid rgba(255,255,255,.1);margin-top:10px;padding-top:12px;font-size:11.5px;color:#8494ac}
+.foot-attr a{color:#b9c4d6;text-decoration:underline}
