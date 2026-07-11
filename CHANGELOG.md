@@ -48,3 +48,8 @@
 - New Dental hub (dental.html): CoverCapy featured banner + dentists from the directory (verified + OSM), county-aware.
 - Home right-rail "Featured: Dental" block; footer "Dental (CoverCapy)" link.
 - CoverCapy copy/URL are PLACEHOLDERS pending the CoverCapy .md (link currently https://covercapy.com).
+
+## Readings featured section (Zodi Animal) (11 JUL 26)
+- New Readings hub (readings.html): Zodi Animal featured banner + reading cards (Primal Animal, Daily Blessing, Compatibility, Forecast).
+- Added "Dental" and "Readings" as featured tabs in the sub-nav; home right-rail "Featured: Readings" block; footer link.
+- Zodi Animal copy/URL are PLACEHOLDERS (link https://zodianimal.com) pending confirmation.

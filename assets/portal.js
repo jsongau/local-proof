@@ -47,7 +47,7 @@ const FILE = {
  '/safety':'safety.html','/about':'about.html','/contact':'about.html','/advertise':'advertise.html',
  '/business/claim':'claim.html','/business/tools':'advertise.html','/language':'about.html','/app':'about.html',
  '/request/new':'post.html?type=request','/ask':'post.html?type=question','/home':'index.html',
- '/talent':'talent.html','/food':'food.html','/members':'members.html','/user':'user.html','/dental':'dental.html'
+ '/talent':'talent.html','/food':'food.html','/members':'members.html','/user':'user.html','/dental':'dental.html','/readings':'readings.html'
 };
 const NAV2MAP = {
  'Rooms':'housing.html?tab=Rooms','Apartments':'housing.html?tab=Apartments','Roommates':'housing.html?tab=Roommates',
@@ -107,7 +107,8 @@ function searchHTML(){return '<div class="searchband"><form class="shell" id="lp
  '</form></div>';}
 
 function navHTML(active){const r1=D.nav1.map(n=>{const href=R('/'+(n==='Home'?'':n.toLowerCase().replace(/ /g,'-')));const on=(active&&active.toLowerCase()===n.toLowerCase())?' class="on" aria-current="page"':'';return '<a href="'+href+'"'+on+'>'+esc(n)+'</a>';}).join('');
- const r2=D.nav2.map(n=>'<a href="'+(NAV2MAP[n]||'index.html')+'">'+esc(n)+'</a>').join('');
+ const r2=D.nav2.map(n=>'<a href="'+(NAV2MAP[n]||'index.html')+'">'+esc(n)+'</a>').join('')+
+   '<a href="'+R('/dental')+'" class="nav-feat">Dental</a><a href="'+R('/readings')+'" class="nav-feat">Readings</a>';
  return '<nav class="nav" aria-label="Primary"><div class="shell r1wrap"><div class="row1">'+r1+'</div></div><div class="row2"><div class="shell">'+r2+'</div></div></nav>';}
 
 function mQuickHTML(){return '<div class="m-quickpost" aria-label="Quick post">'+
@@ -116,7 +117,7 @@ function mQuickHTML(){return '<div class="m-quickpost" aria-label="Quick post">'
  '<a class="red" href="'+R('/request/new')+'">Request quotes</a></div>';}
 
 function footerHTML(){const cols=[
- ['Discover',[['Local News','/news'],['Community','/community'],['Members','/members'],['Guides','/guides'],['Video','/video'],['Events','/events']]],
+ ['Discover',[['Local News','/news'],['Community','/community'],['Members','/members'],['Readings','/readings'],['Guides','/guides'],['Video','/video'],['Events','/events']]],
  ['Housing & Jobs',[['Rentals','/housing'],['Rooms','/housing/Rooms'],['Jobs','/jobs'],['Job Wanted','/jobs']]],
  ['Marketplace',[['Buy & Sell','/marketplace'],['Deals','/deals'],['Local Outcomes','/outcomes'],['Verified Offers','/deals']]],
  ['Businesses',[['Directory','/businesses'],['Dental (CoverCapy)','/dental'],['Claim a business','/business/claim'],['Advertise','/advertise'],['Business tools','/business/tools']]],
@@ -181,7 +182,7 @@ PAGES.home = function(m){
   mod('Sign in','<div class="acct"><div class="btnrow"><a class="b signin" href="'+R('/signin')+'">Sign in</a><a class="b reg" href="'+R('/signup')+'">Register</a></div><div class="links"><a href="'+R('/saved')+'">Saved</a><a href="'+R('/messages')+'">Messages</a><a href="'+R('/account')+'">Dashboard</a><a href="'+R('/post')+'">Post</a></div></div>')+
   mod('Today on LocalProof','<div class="today">'+D_.today.map(t=>'<div class="st"><div class="n tnum">'+esc(t[0])+'</div><div class="l">'+esc(t[1])+'</div></div>').join('')+'</div><div style="padding:5px 10px;font-size:10px;color:var(--faint);border-top:1px solid var(--hair)">Seeded demo activity while in development.</div>')+
   mod('Sponsored Businesses',D_.sponsored_biz.map(b=>'<div class="business-ad"><div class="logo-sq" style="background:'+b.c+'">'+esc(b.n[0])+'</div><div><b>'+esc(b.n)+'</b><p>'+esc(b.cat)+'</p><p>'+esc(b.body)+'</p><div class="ph">'+esc(b.ph)+'</div></div></div>').join(''),null,'gold')+
-  '<section class="module"><div class="module-titlebar green"><h2>Featured: Dental</h2><a class="more" href="'+R('/dental')+'">Open</a></div><div class="cc-mini"><span class="cc-tag">Powered by CoverCapy</span><b>Know what your dental visit should cost.</b><p>Find a trusted local dentist and estimate your cost before you go.</p><a class="adcta-sm" href="'+R('/dental')+'">Dental hub</a></div></section>'+
+  '<section class="module"><div class="module-titlebar green"><h2>Featured: Dental</h2><a class="more" href="'+R('/dental')+'">Open</a></div><div class="cc-mini"><span class="cc-tag">Powered by CoverCapy</span><b>Know what your dental visit should cost.</b><p>Find a trusted local dentist and estimate your cost before you go.</p><a class="adcta-sm" href="'+R('/dental')+'">Dental hub</a></div></section>'+'<section class="module"><div class="module-titlebar" style="border-bottom-color:#5b2a7a"><h2 style="color:#5b2a7a">Featured: Readings</h2><a class="more" href="'+R('/readings')+'">Open</a></div><div class="cc-mini"><span class="cc-tag" style="background:#efe4f5;border-color:#ddc9ea;color:#5b2a7a">Powered by Zodi Animal</span><b>Your animal, your reading, your blessing.</b><p>A moment for yourself \u2014 discover your combined zodiac and a blessing for the week.</p><a class="adcta-sm" href="'+R('/readings')+'">Get a reading</a></div></section>'+
   adRect(D_.ads[3])+
   mod('Deals & Circulars','<ul class="deal-list">'+D_.deals.map(d=>'<li><span class="dcat">'+esc(d.cat)+'</span><div><b><a href="'+R('/deals')+'" style="color:var(--ink)">'+esc(d.title)+'</a></b><div class="adv">'+esc(d.advertiser)+'</div><div class="exp">'+esc(d.exp)+'</div></div></li>').join('')+'</ul>','/deals','gold')+
   mostSearched()+
@@ -625,6 +626,24 @@ PAGES.dental = function(m){
    twocol(cc+'<section class="module"><div class="module-titlebar"><h2>Dentists near you</h2><a class="more" href="'+R('/businesses')+'?cat=Healthcare">All healthcare</a></div><div style="padding:12px">'+list+'</div></section>',
    mostSearched()+safetyMini()));
  injectLd({"@context":"https://schema.org","@type":"CollectionPage","name":"Dental in "+COUNTY_NAME[LP_COUNTY],"about":"Local dentists and dental cost transparency"});
+};
+
+PAGES.readings = function(m){
+ const feat='<section class="zodi-feature"><div class="cc-badge">Featured · Powered by Zodi Animal</div>'+
+   '<h2>Your animal. Your reading. Your blessing.</h2>'+
+   '<p>Discover your combined Eastern and Western zodiac, read what today holds, and receive a blessing for the week ahead — a moment of calm before you get back to local life.</p>'+
+   '<div class="cc-cta"><a class="go" href="https://zodianimal.com" target="_blank" rel="noopener">Get your reading</a> <a class="adcta-sm" href="https://zodianimal.com" target="_blank" rel="noopener">Today’s blessing</a></div>'+
+   '<div class="cc-note">Placeholder — final copy, link and branding come from the Zodi Animal profile.</div></section>';
+ const cards=[['Your Primal Animal','Find the animal that carries your Eastern and Western signs together.'],
+   ['Today’s Blessing','A short blessing and focus for the day, made for your sign.'],
+   ['Compatibility','See how your animal meets another — in love, work, or family.'],
+   ['This Year’s Forecast','What the year ahead holds for your animal.']];
+ const grid='<div class="biz-cards">'+cards.map((c,i)=>'<div class="biz-card"><div class="bt"><div class="bl" style="background:'+['#5b2a7a','#2a3f7a','#7a2a52','#2a6a5b'][i%4]+'">✨</div><div><h3><a href="https://zodianimal.com" target="_blank" rel="noopener">'+esc(c[0])+'</a></h3></div></div><p style="font-size:12.5px;color:var(--muted)">'+esc(c[1])+'</p><a class="adcta-sm" href="https://zodianimal.com" target="_blank" rel="noopener">Open</a></div>').join('')+'</div>';
+ const sub=[['Readings Home','/readings','act'],['Your Animal','https://zodianimal.com'],['Daily Blessing','https://zodianimal.com'],['Compatibility','https://zodianimal.com'],['Forecast','https://zodianimal.com']];
+ section(m, crumb([['Readings','']]) + subnav(sub) + pageHead('Readings & Blessings','A moment for yourself — your zodiac animal, your reading, and a blessing for the week.') +
+   twocol(feat+'<section class="module"><div class="module-titlebar"><h2>Explore your readings</h2></div><div style="padding:12px">'+grid+'</div></section>',
+   mostSearched()+safetyMini()));
+ injectLd({"@context":"https://schema.org","@type":"CollectionPage","name":"Readings & Blessings","about":"Combined Eastern and Western zodiac animal readings and blessings"});
 };
 
 PAGES.legal = function(m){
