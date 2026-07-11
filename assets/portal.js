@@ -88,7 +88,7 @@ function utilityHTML(){return '<div class="utility"><div class="shell">'+
 
 function mastheadHTML(){const a=D.ads[0];return '<div class="masthead"><div class="shell">'+
  '<a class="logo" href="index.html" aria-label="LocalProof home"><span class="mk">L</span>'+
- '<span><span class="wm">LocalProof</span><span class="desc">Los Angeles Community & Classifieds</span></span></a>'+
+ '<span><span class="wm">LocalProof</span><span class="desc">'+(LP_COUNTY==='oc'?'Orange County':'Los Angeles')+' Community &amp; Classifieds</span></span></a>'+
  '<div class="mast-ad ad-slot ad-leader" style="width:728px"><span class="ad-label">Advertisement</span>'+
  '<span class="adart" style="background:'+a.c+'">'+esc(a.advertiser)+'</span>'+
  '<span class="adtxt"><b>'+esc(a.title)+'</b><p>'+esc(a.body)+'</p></span>'+
