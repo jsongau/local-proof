@@ -19,3 +19,12 @@
 - New hubs: Marketplace dense card grid (facets+pagination), Talent pool, Food/Restaurants landing.
 - Jobs/Housing/Community now read the full seed arrays directly (real pagination).
 - Fixed title double-escaping; git initialized; push-ready.
+
+## Users + reviews + SEO/GEO (11 JUL 26)
+- Added 16 mockup members (rank, join/last-login, bio, post/reply/review counts) + Members directory.
+- User profile pages (user.html?u=): profile card + activity tabs (Posts/Reviews/Businesses/Guides).
+- Reviews system: 119 reviews (author→provider, rating, date, body, transaction-confirmed vs community).
+- Review snippets with stars + provenance on business profiles and user profiles.
+- Business profiles now show AggregateRating; community + review authors link to profiles.
+- SEO/GEO structured data injected: LocalBusiness + AggregateRating + Review (rich snippets) and Person schema.
+  NOTE: injected client-side here; the Next.js port emits it server-side for full crawler/GEO strength.

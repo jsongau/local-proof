@@ -6,6 +6,20 @@ const D = window.LP_DATA;
 const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const P = new URLSearchParams(location.search);
 const byId = (arr,id) => (arr||[]).find(x=>x.id===id);
+const userByName = (u) => (D.users||[]).find(x=>x.username===u||x.id===u);
+function stars(r){r=Math.round(r||0);let s='';for(let i=1;i<=5;i++)s+='<span style="color:'+(i<=r?'#b9770a':'#d5d9e0')+'">★</span>';return '<span class="stars" aria-label="'+r+' out of 5">'+s+'</span>';}
+function reviewSnippet(rv,showProvider){
+  return '<div class="review" itemscope itemtype="https://schema.org/Review">'+
+   '<div class="rv-top"><a class="rv-author" href="user.html?u='+encodeURIComponent(rv.author)+'" itemprop="author">'+esc(rv.author)+'</a>'+
+   (rv.verified?'<span class="rv-verified">'+svgCheck()+'Transaction confirmed</span>':'<span class="rv-comm">Community review</span>')+
+   '<span class="rv-date" itemprop="datePublished">'+esc(rv.date)+'</span></div>'+
+   '<div class="rv-stars" itemprop="reviewRating" itemscope itemtype="https://schema.org/Rating"><meta itemprop="ratingValue" content="'+rv.rating+'"><meta itemprop="bestRating" content="5">'+stars(rv.rating)+'</div>'+
+   (showProvider?'<div class="rv-prov"><a href="business.html?id='+rv.provider+'">'+esc(rv.provider_name)+'</a></div>':'')+
+   '<p class="rv-body" itemprop="reviewBody">'+esc(rv.body)+'</p></div>';
+}
+function svgCheck(){return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true" style="vertical-align:-1px"><path d="M20 6 9 17l-5-5"/></svg>';}
+function injectLd(obj){try{const s=document.createElement('script');s.type='application/ld+json';s.textContent=JSON.stringify(obj);document.head.appendChild(s);}catch(e){}}
+function reviewsFor(pid){return (D.reviews||[]).filter(r=>r.provider===pid);}
 
 /* ---------- route → file map ---------- */
 const FILE = {
@@ -17,7 +31,7 @@ const FILE = {
  '/safety':'safety.html','/about':'about.html','/contact':'about.html','/advertise':'advertise.html',
  '/business/claim':'claim.html','/business/tools':'advertise.html','/language':'about.html','/app':'about.html',
  '/request/new':'post.html?type=request','/ask':'post.html?type=question','/home':'index.html',
- '/talent':'talent.html','/food':'food.html'
+ '/talent':'talent.html','/food':'food.html','/members':'members.html','/user':'user.html'
 };
 const NAV2MAP = {
  'Rooms':'housing.html?tab=Rooms','Apartments':'housing.html?tab=Apartments','Roommates':'housing.html?tab=Roommates',
@@ -85,7 +99,7 @@ function mQuickHTML(){return '<div class="m-quickpost" aria-label="Quick post">'
  '<a class="red" href="'+R('/request/new')+'">Request quotes</a></div>';}
 
 function footerHTML(){const cols=[
- ['Discover',[['Local News','/news'],['Community','/community'],['Guides','/guides'],['Video','/video'],['Events','/events']]],
+ ['Discover',[['Local News','/news'],['Community','/community'],['Members','/members'],['Guides','/guides'],['Video','/video'],['Events','/events']]],
  ['Housing & Jobs',[['Rentals','/housing'],['Rooms','/housing/Rooms'],['Jobs','/jobs'],['Job Wanted','/jobs']]],
  ['Marketplace',[['Buy & Sell','/marketplace'],['Deals','/deals'],['Local Outcomes','/outcomes'],['Verified Offers','/deals']]],
  ['Businesses',[['Directory','/businesses'],['Claim a business','/business/claim'],['Advertise','/advertise'],['Business tools','/business/tools']]],
@@ -195,7 +209,7 @@ PAGES.community = function(m){
  const tabs=[['Latest','All discussions'],['Popular','Most active'],['Unanswered','Unanswered'],['Verified answers','Verified answers']];
  const tabbar='<div class="subnav" style="margin-top:-4px">'+tabs.map(t=>'<a href="community.html?sort='+encodeURIComponent(t[0])+'"'+(t[0]===tab?' class="act"':'')+'>'+esc(t[1])+'</a>').join('')+'<a class="newbtn" href="'+R('/ask')+'" style="margin-left:auto;text-decoration:none;color:#fff">Post a discussion</a></div>';
  function filt(list){let a=list.slice();if(tab==='Popular')a.sort((x,y)=>y.replies-x.replies);else if(tab==='Unanswered')a=a.filter(q=>!q.accepted);else if(tab==='Verified answers')a=a.filter(q=>q.accepted);return a;}
- const rowsHTML=a=>a.map(q=>'<tr><td class="role"><span class="doc">▤</span><a href="thread.html?id='+q.id+'">'+esc(q.q)+'</a><div style="font-size:11px;color:var(--faint);margin-top:2px">'+esc(q.city)+' · '+esc(q.cat)+(q.accepted?' · <span style="color:var(--green);font-weight:700">Verified answer</span>':'')+'</div></td><td class="co">'+esc(q.author)+'<div class="upd">'+esc(q.age)+' ago</div></td><td class="rr">'+q.replies+' / '+q.reads+'</td></tr>').join('');
+ const rowsHTML=a=>a.map(q=>'<tr><td class="role"><span class="doc">▤</span><a href="thread.html?id='+q.id+'">'+esc(q.q)+'</a><div style="font-size:11px;color:var(--faint);margin-top:2px">'+esc(q.city)+' · '+esc(q.cat)+(q.accepted?' · <span style="color:var(--green);font-weight:700">Verified answer</span>':'')+'</div></td><td class="co"><a href="user.html?u='+encodeURIComponent(q.author)+'">'+esc(q.author)+'</a><div class="upd">'+esc(q.age)+' ago</div></td><td class="rr">'+q.replies+' / '+q.reads+'</td></tr>').join('');
  const filtered=filt(all);const per=12,total=Math.ceil(filtered.length/per),cur=Math.min(page,total);
  const table='<table class="rtable"><thead><tr><th>Topic</th><th>Author</th><th style="text-align:right">Replies / Reads</th></tr></thead><tbody>'+rowsHTML(filtered.slice((cur-1)*per,cur*per))+'</tbody></table>';
  const legend='<div style="display:flex;flex-wrap:wrap;gap:12px;padding:10px;background:#fff;border:1px solid var(--border);border-bottom:0;font-size:12px"><span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#5b4a7a"></span> community opinion</span><span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--green)"></span> verified fact</span><span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#1d3e73"></span> professional response</span><span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--gold)"></span> provider recommendation</span></div>';
@@ -357,12 +371,21 @@ PAGES.business = function(m){
  const id=P.get('id')||'prov_sgv_plumbing'; const p=byId(D.providers,id)||D.providers[0];
  const badge=b=>'<span class="badge2 '+b[1]+'">'+esc(b[0])+'</span>';
  const specs=[['Service area',p.area],['Response time',p.response],['Availability',p.avail],['Completed outcomes',p.outcomes+''],['Pricing',p.price],['Phone',p.phone]];
+ const revs=reviewsFor(p.id);
+ const verifiedCount=revs.filter(r=>r.verified).length;
+ const agg='<div class="agg"><div class="big">'+(p.rating||0).toFixed(1)+'</div><div>'+stars(p.rating)+'<div class="sub">'+p.reviews+' reviews · '+verifiedCount+' transaction-confirmed</div></div></div>';
+ const reviewsBlock='<h2 style="font-family:var(--serif);font-size:17px;margin:16px 0 8px">Reviews</h2>'+agg+(revs.length?revs.map(r=>reviewSnippet(r,false)).join(''):'<div class="empty">No reviews yet.</div>');
  section(m, crumb([['Businesses','/businesses'],[p.name,'']]) +
-  twocol('<article class="detail"><div style="display:flex;gap:14px;align-items:flex-start"><div class="bl" style="width:60px;height:60px;font-size:24px;background:'+p.c+'">'+esc(p.name[0])+'</div><div><h1>'+esc(p.name)+'</h1><div class="dmeta"><span>'+esc(p.cat)+'</span><span>★ '+p.rating.toFixed(1)+' · '+p.reviews+' reviews</span></div><div class="badges" style="display:flex;flex-wrap:wrap;gap:5px">'+p.badges.map(badge).join('')+'</div></div></div><p style="font-size:12.5px;color:var(--muted);margin-top:10px">Review provenance: '+esc(p.prov)+'</p>'+
+  twocol('<article class="detail"><div style="display:flex;gap:14px;align-items:flex-start"><div class="bl" style="width:60px;height:60px;font-size:24px;background:'+p.c+'">'+esc(p.name[0])+'</div><div><h1>'+esc(p.name)+'</h1><div class="dmeta"><span>'+esc(p.cat)+'</span><span>'+stars(p.rating)+' '+p.rating.toFixed(1)+' · '+p.reviews+' reviews</span></div><div class="badges" style="display:flex;flex-wrap:wrap;gap:5px">'+p.badges.map(badge).join('')+'</div></div></div><p style="font-size:12.5px;color:var(--muted);margin-top:10px">Review provenance: '+esc(p.prov)+'</p>'+
   '<div class="spec-grid">'+specs.map(s=>'<div class="s"><div class="k">'+esc(s[0])+'</div><div class="v">'+esc(s[1])+'</div></div>').join('')+'</div>'+
-  '<div class="body"><p>Demonstration provider profile. The full build shows services and fees, completed outcomes, community answers this business has given, and reviews with confirmed relationships.</p></div>'+
-  '<button class="go" data-confirm="Request sent (demo) — sign in to receive quotes.">Request a quote</button> <button class="adcta-sm" data-confirm="Saved (demo).">Save</button></article>',
+  '<div class="body"><p>Demonstration provider profile. The full build shows services and fees, completed outcomes, and community answers this business has given.</p></div>'+
+  '<button class="go" data-confirm="Request sent (demo) — sign in to receive quotes.">Request a quote</button> <button class="adcta-sm" data-confirm="Saved (demo).">Save</button>'+
+  reviewsBlock+'</article>',
   mod('What badges mean','<div style="padding:10px;font-size:12px;color:var(--charcoal)">Each badge points to specific, dated evidence and says what it does <b>not</b> prove. <a href="'+R('/safety')+'">Full badge guide</a>.</div>')+safetyMini()));
+ // SEO/GEO: LocalBusiness + AggregateRating + Review rich-snippet schema
+ injectLd({"@context":"https://schema.org","@type":"LocalBusiness","name":p.name,"description":p.cat,"areaServed":p.area,"telephone":p.phone,
+   "aggregateRating":{"@type":"AggregateRating","ratingValue":p.rating,"reviewCount":p.reviews,"bestRating":5},
+   "review":revs.slice(0,8).map(r=>({"@type":"Review","author":{"@type":"Person","name":r.author},"datePublished":r.date,"reviewBody":r.body,"reviewRating":{"@type":"Rating","ratingValue":r.rating,"bestRating":5}}))});
 };
 
 PAGES.deals = function(m){
@@ -531,6 +554,40 @@ PAGES.city = function(m){
  const grid='<div class="biz-cards">'+links.map(l=>'<div class="biz-card"><h3><a href="'+R(l[1])+'">'+esc(l[0])+' in '+esc(city.name)+'</a></h3><p style="font-size:12px;color:var(--muted)">Browse '+esc(l[0].toLowerCase())+' near '+esc(city.name)+'.</p><a class="adcta-sm" href="'+R(l[1])+'">Open</a></div>').join('')+'</div>';
  const rentals=mod('Latest rentals in '+city.name,'<ul class="classified-list">'+D.housing.slice(0,4).map(h=>'<li><div class="t"><a href="listing.html?type=rental&id='+h.id+'">'+esc(h.title)+'</a><div class="sub">'+esc(h.city)+'</div></div><div class="price">'+esc(h.rent)+'</div></li>').join('')+'</ul>','/housing');
  section(m, crumb([['Cities',''],[city.name,'']]) + pageHead(city.name,'Everything local: rentals, jobs, providers, outcomes, community and guides.') + twocol(grid, rentals+mostSearched()));
+};
+
+PAGES.user = function(m){
+ const u=userByName(P.get('u')||P.get('id')||'foodie_lin')||D.users[0];
+ const tab=P.get('tab')||'all';
+ const posts=D.community.filter(q=>q.author===u.username);
+ const revs=D.reviews.filter(r=>r.author===u.username);
+ const biz=D.providers.filter(p=>p.owner===u.username);
+ const guides=D.guides.slice(0, u.guides||0);
+ const tabs=[['all','All'],['posts','Posts ('+posts.length+')'],['reviews','Reviews ('+revs.length+')'],['businesses','Businesses ('+biz.length+')'],['guides','Guides ('+guides.length+')']];
+ const tabbar='<div class="subnav">'+tabs.map(t=>'<a href="user.html?u='+encodeURIComponent(u.username)+'&tab='+t[0]+'"'+(t[0]===tab?' class="act"':'')+'>'+esc(t[1])+'</a>').join('')+'</div>';
+ const postsHTML=posts.length?'<ul class="classified-list" style="border:1px solid var(--border)">'+posts.map(q=>'<li><div class="t"><a href="thread.html?id='+q.id+'">'+esc(q.q)+'</a><div class="sub">'+esc(q.city)+' · '+esc(q.cat)+'</div></div><div class="price" style="color:var(--navy)">'+q.replies+'</div></li>').join('')+'</ul>':'<div class="empty">No posts yet.</div>';
+ const revsHTML=revs.length?revs.map(r=>reviewSnippet(r,true)).join(''):'<div class="empty">No reviews yet.</div>';
+ const bizHTML=biz.length?'<div class="biz-cards">'+biz.map(p=>'<div class="biz-card"><div class="bt"><div class="bl" style="background:'+p.c+'">'+esc(p.name[0])+'</div><div><h3><a href="business.html?id='+p.id+'">'+esc(p.name)+'</a></h3><div class="rmeta">'+esc(p.cat)+'</div></div></div><div style="font-size:12px">★ '+(p.rating||0).toFixed(1)+' · '+p.reviews+' reviews</div></div>').join('')+'</div>':'<div class="empty">No businesses claimed.</div>';
+ const guidesHTML=guides.length?'<ul class="hl-list" style="border:1px solid var(--border)">'+guides.map(g=>'<li><a href="guide.html?id='+g.id+'">'+esc(g.title)+'</a></li>').join('')+'</ul>':'<div class="empty">No guide contributions yet.</div>';
+ let body='';
+ if(tab==='posts')body=postsHTML;
+ else if(tab==='reviews')body=revsHTML;
+ else if(tab==='businesses')body=bizHTML;
+ else if(tab==='guides')body=guidesHTML;
+ else body=mod('Recent posts',postsHTML)+mod('Recent reviews','<div style="padding:10px">'+revsHTML+'</div>');
+ const card='<div class="pcard"><div class="pav" style="background:'+u.color+'">'+esc(u.display[0])+'</div>'+
+   '<h1>'+esc(u.username)+'</h1><div class="rank">'+esc(u.rank)+'</div><div class="bio">'+esc(u.bio)+'</div>'+
+   '<div class="pstats"><div class="s"><div class="n">'+u.posts+'</div><div class="l">Posts</div></div><div class="s"><div class="n">'+u.replies+'</div><div class="l">Replies</div></div><div class="s"><div class="n">'+u.reviews+'</div><div class="l">Reviews</div></div></div>'+
+   '<a class="pmsg" href="'+R('/messages')+'">Private message</a>'+
+   '<div class="meta">Member of '+esc(u.city)+'<br>Joined '+esc(u.join)+'<br>Last seen '+esc(u.last_login)+'</div></div>';
+ section(m, crumb([['Members','/members'],[u.username,'']]) + pageHead(esc(u.username)+' — member profile','Local contributor in '+esc(u.city)+'. '+u.posts+' posts · '+u.reviews+' reviews.') + '<div class="profile">'+card+'<div class="maincol">'+tabbar+body+'</div></div>');
+ // SEO/GEO: Person schema
+ injectLd({"@context":"https://schema.org","@type":"Person","name":u.username,"description":u.bio,"homeLocation":{"@type":"Place","name":u.city},"url":"https://www.localproof.com/user/"+u.username});
+};
+
+PAGES.members = function(m){
+ const grid='<div class="members">'+D.users.map(u=>'<div class="mcard"><div class="av" style="background:'+u.color+'">'+esc(u.display[0])+'</div><a href="user.html?u='+encodeURIComponent(u.username)+'">'+esc(u.username)+'</a><div class="rk">'+esc(u.rank)+'</div><div class="st">'+esc(u.city)+' · '+u.posts+' posts · '+u.reviews+' reviews</div></div>').join('')+'</div>';
+ section(m, crumb([['Members','']]) + pageHead('Community Members','Residents who post, answer and review across Greater LA.') + twocol(grid, mostSearched()+safetyMini()));
 };
 
 PAGES.legal = function(m){
