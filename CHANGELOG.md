@@ -28,3 +28,11 @@
 - Business profiles now show AggregateRating; community + review authors link to profiles.
 - SEO/GEO structured data injected: LocalBusiness + AggregateRating + Review (rich snippets) and Person schema.
   NOTE: injected client-side here; the Next.js port emits it server-side for full crawler/GEO strength.
+
+## County toggle + Orange County (11 JUL 26)
+- Added LA County ⇄ Orange County toggle in the utility bar (persists via localStorage).
+- Added 16 Orange County cities (Irvine, Anaheim, Santa Ana, Huntington Beach, Newport Beach, Costa Mesa, Fullerton, Orange, Tustin, Mission Viejo, Garden Grove, Fountain Valley, Buena Park, Yorba Linda, Lake Forest, Westminster).
+- Every listing/job/business/thread tagged with county; lists, selects, neighborhoods, footer and edition label filter by active county.
+- Added OC content: +28 rentals, +28 jobs, +24 marketplace, +12 providers, +10 threads. (Totals: 88 housing, 88 jobs, 84 marketplace, 52 providers, 50 threads.)
+- Detail pages read the full dataset so any listing resolves regardless of active county.
+- Fixed esc() ampersand-escaping (regressed by an earlier sed).

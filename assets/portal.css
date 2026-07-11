@@ -562,3 +562,9 @@ body{font-size:12.5px}
 .mcard .rk{font-size:11px;color:var(--gold);font-weight:600;margin-top:2px}
 .mcard .st{font-size:11px;color:var(--muted);margin-top:4px}
 @media(max-width:820px){.profile{grid-template-columns:1fr}.members{grid-template-columns:1fr 1fr}}
+
+/* ===== county toggle ===== */
+.county-toggle{display:inline-flex;gap:2px;background:rgba(255,255,255,.08);border-radius:12px;padding:2px}
+.county-toggle a{color:#cfd8e6;font-size:11px;font-weight:600;padding:2px 9px;border-radius:10px}
+.county-toggle a:hover{color:#fff;text-decoration:none}
+.county-toggle a.on{background:#fff;color:var(--navy)}

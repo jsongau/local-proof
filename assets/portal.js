@@ -3,7 +3,20 @@
    Every link resolves via R() to a real file, so nothing is a dead end. */
 (function(){
 const D = window.LP_DATA;
-const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* ---- County scope (LA / OC) ---- */
+let LP_COUNTY='la'; try{LP_COUNTY=localStorage.getItem('lp_county')||'la';}catch(e){}
+const COUNTY_NAME={la:'Greater Los Angeles',oc:'Orange County'};
+const COUNTY_EDITION={la:'Greater Los Angeles Edition',oc:'Orange County Edition'};
+const CITY_COUNTY={}; (D.cities||[]).forEach(c=>{CITY_COUNTY[c.name]=c.county||'la';});
+D._full={housing:D.housing,jobs:D.jobs,marketplace:D.marketplace,providers:D.providers,community:D.community,cities:D.cities};
+const _inC=x=>((x&&x.county)||CITY_COUNTY[x&&x.city]||'la')===LP_COUNTY;
+D.housing=D._full.housing.filter(_inC);
+D.jobs=D._full.jobs.filter(_inC);
+D.marketplace=D._full.marketplace.filter(_inC);
+D.providers=D._full.providers.filter(_inC);
+D.community=D._full.community.filter(_inC);
+D.cities=D._full.cities.filter(c=>(c.county||'la')===LP_COUNTY);
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const P = new URLSearchParams(location.search);
 const byId = (arr,id) => (arr||[]).find(x=>x.id===id);
 const userByName = (u) => (D.users||[]).find(x=>x.username===u||x.id===u);
@@ -64,7 +77,8 @@ window.R = R;
 
 /* ---------- shared shell ---------- */
 function utilityHTML(){return '<div class="utility"><div class="shell">'+
- '<span class="edition">Greater Los Angeles Edition</span><span class="sep">|</span>'+
+ '<span class="county-toggle" role="group" aria-label="Choose county"><a href="#" data-county="la"'+(LP_COUNTY==='la'?' class="on" aria-current="true"':'')+'>LA County</a><a href="#" data-county="oc"'+(LP_COUNTY==='oc'?' class="on" aria-current="true"':'')+'>Orange County</a></span><span class="sep">|</span>'+
+ '<span class="edition">'+COUNTY_EDITION[LP_COUNTY]+'</span><span class="sep">|</span>'+
  '<span class="hide-sm">Friday, July 10, 2026</span><span class="sep hide-sm">|</span><span class="hide-sm">86°F Sunny</span>'+
  '<span class="spacer"></span>'+
  '<a class="hide-sm" href="'+R('/language')+'">English</a><a class="hide-sm" href="'+R('/app')+'">Mobile App</a>'+
@@ -84,7 +98,7 @@ function searchHTML(){return '<div class="searchband"><form class="shell" id="lp
  '<div class="keyword"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>'+
  '<label class="sr-only" for="lpq">Search LocalProof</label><input id="lpq" name="q" type="text" placeholder="Search providers, rentals, jobs, businesses, marketplace…" autocomplete="off"></div>'+
  '<label class="sr-only" for="lpcat">Category</label><select id="lpcat" aria-label="Category"><option value="">All categories</option>'+D.categories.map(c=>'<option>'+esc(c)+'</option>').join('')+'</select>'+
- '<label class="sr-only" for="lpcity">City</label><select id="lpcity" aria-label="City"><option value="greater-los-angeles">Greater Los Angeles</option>'+D.cities.map(c=>'<option value="'+c.slug+'">'+esc(c.name)+'</option>').join('')+'</select>'+
+ '<label class="sr-only" for="lpcity">City</label><select id="lpcity" aria-label="City"><option value="'+(LP_COUNTY==='oc'?'orange-county':'greater-los-angeles')+'">'+COUNTY_NAME[LP_COUNTY]+'</option>'+D.cities.map(c=>'<option value="'+c.slug+'">'+esc(c.name)+'</option>').join('')+'</select>'+
  '<button class="go" type="submit">Search</button>'+
  '<span class="common">Popular: <a href="'+R('/search')+'?q=plumber">plumber</a><a href="'+R('/search')+'?q=movers">movers</a><a href="'+R('/search')+'?q=rooms">rooms</a><a href="'+R('/search')+'?q=jobs">jobs</a></span>'+
  '</form></div>';}
@@ -109,7 +123,7 @@ function footerHTML(){const cols=[
  return '<footer class="footer"><div class="shell"><div class="foot-grid">'+
  cols.map(c=>'<div><h4>'+esc(c[0])+'</h4><ul>'+c[1].map(l=>'<li><a href="'+R(l[1])+'">'+esc(l[0])+'</a></li>').join('')+'</ul></div>').join('')+
  '</div><div class="foot-cities"><h4>Cities & Neighborhoods</h4><div class="clist">'+
- D.cities.map(c=>'<a href="'+R('/city/'+c.slug)+'">'+esc(c.name)+'</a>').join('')+'<a href="'+R('/city/greater-los-angeles')+'">All of Greater LA</a></div></div>'+
+ D.cities.map(c=>'<a href="'+R('/city/'+c.slug)+'">'+esc(c.name)+'</a>').join('')+'<a href="'+R('/city/'+(LP_COUNTY==='oc'?'orange-county':'greater-los-angeles'))+'">All of '+esc(COUNTY_NAME[LP_COUNTY])+'</a></div></div>'+
  '<div class="foot-bottom"><span>© 2026 LocalProof — Greater Los Angeles. Demonstration portal, seeded data.</span><span>Sponsored placements are labeled</span></div></div></footer>';}
 
 /* ---------- small shared pieces ---------- */
@@ -220,7 +234,7 @@ PAGES.community = function(m){
 };
 
 PAGES.thread = function(m){
- const id=P.get('id')||'t1'; const q=byId(D.community,id)||D.community[0];
+ const id=P.get('id')||'t1'; const q=byId(D._full.community,id)||D._full.community[0];
  const replies=(D.thread_replies[id]||[{a:'Resident',type:'community opinion',body:'Thanks for asking — following this thread.'}]);
  const rep=replies.map(r=>'<div style="border:1px solid var(--hair);border-radius:4px;padding:11px;margin-bottom:8px;background:#fff"><div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:5px"><b style="font-size:12.5px">'+esc(r.a)+'</b><span class="tag-pill '+(r.type==='verified fact'?'green':r.type==='professional response'?'':'gold')+'">'+esc(r.type)+'</span></div><p style="font-size:13px;color:var(--charcoal)">'+esc(r.body)+'</p></div>').join('');
  section(m, crumb([['Community','/community'],[q.cat,'']]) +
@@ -336,11 +350,11 @@ PAGES.listing = function(m){
  let desc='';
  const expL={none:'No experience',under_1:'Under 1 yr','1_3':'1–3 yrs','3_5':'3–5 yrs','5_10':'5–10 yrs','10_plus':'10+ yrs'};
  const eduL={high_school:'High school',associate:'Associate',bachelor:'Bachelor',master:'Master',doctorate:'Doctorate',other:'Other'};
- if(type==='rental'){const h=byId(D.housing,id)||D.housing[0];title=h.title;area=h.city;price=h.rent;back=['Housing','/housing'];desc=h.desc||'';
+ if(type==='rental'){const h=byId(D._full.housing,id)||D._full.housing[0];title=h.title;area=h.city;price=h.rent;back=['Housing','/housing'];desc=h.desc||'';
   specs=[['Type',h.kind],['Bedrooms',h.beds],['Size',h.sqft||'—'],['City',h.city],['Rent',h.rent],['Deposit',h.deposit||'Ask'],['Parking',h.parking||'—'],['Pets',h.pets||'—'],['Available',h.available||'—'],['Posted',h.age+' ago']];}
- else if(type==='job'){const j=byId(D.jobs,id)||D.jobs[0];title=j.role;area=j.city;price=j.pay;back=['Jobs','/jobs'];desc=j.desc||'';
+ else if(type==='job'){const j=byId(D._full.jobs,id)||D._full.jobs[0];title=j.role;area=j.city;price=j.pay;back=['Jobs','/jobs'];desc=j.desc||'';
   specs=[['Company',j.company],['City',j.city],['Type',j.jtype],['Pay',j.pay],['Experience',expL[j.experience]||'—'],['Education',eduL[j.education]||'—'],['Company size',j.company_size||'—'],['Benefits',j.benefits||'—'],['Posted',j.age+' ago'],['Status',j.hiring?'Hiring':'Job wanted']];}
- else {const x=byId(D.marketplace,id)||D.marketplace[0];title=x.item;area=x.city;price=x.price;back=['Marketplace','/marketplace'];desc=x.desc||'';
+ else {const x=byId(D._full.marketplace,id)||D._full.marketplace[0];title=x.item;area=x.city;price=x.price;back=['Marketplace','/marketplace'];desc=x.desc||'';
   specs=[['Condition',x.cond],['Category',x.category||'—'],['City',x.city],['Price',x.price],['Posted',x.age+' ago']];}
  const specHTML='<div class="spec-grid">'+specs.map(s=>'<div class="s"><div class="k">'+esc(s[0])+'</div><div class="v">'+esc(s[1])+'</div></div>').join('')+'</div>';
  const contactBtn=type==='job'?'Apply / contact':'Contact poster';
@@ -356,7 +370,7 @@ PAGES.businesses = function(m){
  const sub=[['Directory Home','/businesses','act']].concat(cats.map(c=>[c,'/businesses?cat='+encodeURIComponent(c),cat===c?'on':''])).concat([['Claim a business','/business/claim']]);
  // LEFT: category columns (food-page style)
  const icons=['Ut','Lg','RE','Au','Hc','Ed','HS','Sh'];
- const left='<div class="catcol">'+D.business_dir.map((d,i)=>'<div class="catblock"><div class="ci">'+esc(icons[i%icons.length])+'</div><div style="flex:1"><div style="font-weight:700;font-size:12.5px;color:var(--navy);margin-bottom:3px"><a href="businesses.html?cat='+encodeURIComponent(d.cat)+'" style="color:var(--navy)">'+esc(d.cat)+'</a></div><div class="cc">'+d.items.map(it=>'<a href="business.html?id='+(D.providers.find(p=>p.name===it[0])?D.providers.find(p=>p.name===it[0]).id:'prov_sgv_plumbing')+'">'+esc(it[0])+'</a>').join('')+'</div></div></div>').join('')+'</div>';
+ const left='<div class="catcol">'+D.business_dir.map((d,i)=>'<div class="catblock"><div class="ci">'+esc(icons[i%icons.length])+'</div><div style="flex:1"><div style="font-weight:700;font-size:12.5px;color:var(--navy);margin-bottom:3px"><a href="businesses.html?cat='+encodeURIComponent(d.cat)+'" style="color:var(--navy)">'+esc(d.cat)+'</a></div><div class="cc">'+d.items.map(it=>'<a href="business.html?id='+(D._full.providers.find(p=>p.name===it[0])?D._full.providers.find(p=>p.name===it[0]).id:'prov_sgv_plumbing')+'">'+esc(it[0])+'</a>').join('')+'</div></div></div>').join('')+'</div>';
  // CENTER: verified provider spotlight cards
  const shown=cat?D.providers.filter(p=>p.cat.toLowerCase().includes(cat.toLowerCase().split(' ')[0])):D.providers;
  const list=(shown.length?shown:D.providers);
@@ -368,7 +382,7 @@ PAGES.businesses = function(m){
 };
 
 PAGES.business = function(m){
- const id=P.get('id')||'prov_sgv_plumbing'; const p=byId(D.providers,id)||D.providers[0];
+ const id=P.get('id')||'prov_sgv_plumbing'; const p=byId(D._full.providers,id)||D._full.providers[0];
  const badge=b=>'<span class="badge2 '+b[1]+'">'+esc(b[0])+'</span>';
  const specs=[['Service area',p.area],['Response time',p.response],['Availability',p.avail],['Completed outcomes',p.outcomes+''],['Pricing',p.price],['Phone',p.phone]];
  const revs=reviewsFor(p.id);
@@ -559,9 +573,9 @@ PAGES.city = function(m){
 PAGES.user = function(m){
  const u=userByName(P.get('u')||P.get('id')||'foodie_lin')||D.users[0];
  const tab=P.get('tab')||'all';
- const posts=D.community.filter(q=>q.author===u.username);
+ const posts=D._full.community.filter(q=>q.author===u.username);
  const revs=D.reviews.filter(r=>r.author===u.username);
- const biz=D.providers.filter(p=>p.owner===u.username);
+ const biz=D._full.providers.filter(p=>p.owner===u.username);
  const guides=D.guides.slice(0, u.guides||0);
  const tabs=[['all','All'],['posts','Posts ('+posts.length+')'],['reviews','Reviews ('+revs.length+')'],['businesses','Businesses ('+biz.length+')'],['guides','Guides ('+guides.length+')']];
  const tabbar='<div class="subnav">'+tabs.map(t=>'<a href="user.html?u='+encodeURIComponent(u.username)+'&tab='+t[0]+'"'+(t[0]===tab?' class="act"':'')+'>'+esc(t[1])+'</a>').join('')+'</div>';
@@ -607,6 +621,8 @@ function boot(){
  // search submit
  const sf=document.getElementById('lpSearch');
  if(sf)sf.addEventListener('submit',e=>{e.preventDefault();const q=document.getElementById('lpq').value.trim();location.href='search.html'+(q?('?q='+encodeURIComponent(q)):'');});
+ // county toggle
+ document.body.addEventListener('click',e=>{const c=e.target.closest('[data-county]');if(c){e.preventDefault();const v=c.getAttribute('data-county');try{localStorage.setItem('lp_county',v);}catch(err){}location.reload();}});
  // confirm buttons (demo actions)
  document.body.addEventListener('click',e=>{const b=e.target.closest('[data-confirm]');if(b){e.preventDefault();toast(b.getAttribute('data-confirm'));}});
  // toast
