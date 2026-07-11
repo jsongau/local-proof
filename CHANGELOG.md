@@ -43,3 +43,8 @@
 - Businesses come in as community-listed / unclaimed with a "Claim this business" funnel (the moat).
 - UI: "Source: OpenStreetMap" citation on cards + profiles; rating guarded for unrated OSM records; ODbL footer attribution.
 - Seeded 14 labeled sample OSM businesses (LA+OC) so the pattern renders now; run the ingester for live data.
+
+## Dental featured section (CoverCapy) (11 JUL 26)
+- New Dental hub (dental.html): CoverCapy featured banner + dentists from the directory (verified + OSM), county-aware.
+- Home right-rail "Featured: Dental" block; footer "Dental (CoverCapy)" link.
+- CoverCapy copy/URL are PLACEHOLDERS pending the CoverCapy .md (link currently https://covercapy.com).

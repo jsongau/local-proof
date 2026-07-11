@@ -47,7 +47,7 @@ const FILE = {
  '/safety':'safety.html','/about':'about.html','/contact':'about.html','/advertise':'advertise.html',
  '/business/claim':'claim.html','/business/tools':'advertise.html','/language':'about.html','/app':'about.html',
  '/request/new':'post.html?type=request','/ask':'post.html?type=question','/home':'index.html',
- '/talent':'talent.html','/food':'food.html','/members':'members.html','/user':'user.html'
+ '/talent':'talent.html','/food':'food.html','/members':'members.html','/user':'user.html','/dental':'dental.html'
 };
 const NAV2MAP = {
  'Rooms':'housing.html?tab=Rooms','Apartments':'housing.html?tab=Apartments','Roommates':'housing.html?tab=Roommates',
@@ -119,7 +119,7 @@ function footerHTML(){const cols=[
  ['Discover',[['Local News','/news'],['Community','/community'],['Members','/members'],['Guides','/guides'],['Video','/video'],['Events','/events']]],
  ['Housing & Jobs',[['Rentals','/housing'],['Rooms','/housing/Rooms'],['Jobs','/jobs'],['Job Wanted','/jobs']]],
  ['Marketplace',[['Buy & Sell','/marketplace'],['Deals','/deals'],['Local Outcomes','/outcomes'],['Verified Offers','/deals']]],
- ['Businesses',[['Directory','/businesses'],['Claim a business','/business/claim'],['Advertise','/advertise'],['Business tools','/business/tools']]],
+ ['Businesses',[['Directory','/businesses'],['Dental (CoverCapy)','/dental'],['Claim a business','/business/claim'],['Advertise','/advertise'],['Business tools','/business/tools']]],
  ['Safety',[['Trust & Safety','/safety'],['Report a scam','/safety'],['What badges mean','/safety']]],
  ['About',[['About LocalProof','/about'],['Privacy','/legal/privacy'],['Terms','/legal/terms'],['Contact','/contact']]]
  ];
@@ -181,6 +181,7 @@ PAGES.home = function(m){
   mod('Sign in','<div class="acct"><div class="btnrow"><a class="b signin" href="'+R('/signin')+'">Sign in</a><a class="b reg" href="'+R('/signup')+'">Register</a></div><div class="links"><a href="'+R('/saved')+'">Saved</a><a href="'+R('/messages')+'">Messages</a><a href="'+R('/account')+'">Dashboard</a><a href="'+R('/post')+'">Post</a></div></div>')+
   mod('Today on LocalProof','<div class="today">'+D_.today.map(t=>'<div class="st"><div class="n tnum">'+esc(t[0])+'</div><div class="l">'+esc(t[1])+'</div></div>').join('')+'</div><div style="padding:5px 10px;font-size:10px;color:var(--faint);border-top:1px solid var(--hair)">Seeded demo activity while in development.</div>')+
   mod('Sponsored Businesses',D_.sponsored_biz.map(b=>'<div class="business-ad"><div class="logo-sq" style="background:'+b.c+'">'+esc(b.n[0])+'</div><div><b>'+esc(b.n)+'</b><p>'+esc(b.cat)+'</p><p>'+esc(b.body)+'</p><div class="ph">'+esc(b.ph)+'</div></div></div>').join(''),null,'gold')+
+  '<section class="module"><div class="module-titlebar green"><h2>Featured: Dental</h2><a class="more" href="'+R('/dental')+'">Open</a></div><div class="cc-mini"><span class="cc-tag">Powered by CoverCapy</span><b>Know what your dental visit should cost.</b><p>Find a trusted local dentist and estimate your cost before you go.</p><a class="adcta-sm" href="'+R('/dental')+'">Dental hub</a></div></section>'+
   adRect(D_.ads[3])+
   mod('Deals & Circulars','<ul class="deal-list">'+D_.deals.map(d=>'<li><span class="dcat">'+esc(d.cat)+'</span><div><b><a href="'+R('/deals')+'" style="color:var(--ink)">'+esc(d.title)+'</a></b><div class="adv">'+esc(d.advertiser)+'</div><div class="exp">'+esc(d.exp)+'</div></div></li>').join('')+'</ul>','/deals','gold')+
   mostSearched()+
@@ -606,6 +607,24 @@ PAGES.user = function(m){
 PAGES.members = function(m){
  const grid='<div class="members">'+D.users.map(u=>'<div class="mcard"><div class="av" style="background:'+u.color+'">'+esc(u.display[0])+'</div><a href="user.html?u='+encodeURIComponent(u.username)+'">'+esc(u.username)+'</a><div class="rk">'+esc(u.rank)+'</div><div class="st">'+esc(u.city)+' · '+u.posts+' posts · '+u.reviews+' reviews</div></div>').join('')+'</div>';
  section(m, crumb([['Members','']]) + pageHead('Community Members','Residents who post, answer and review across Greater LA.') + twocol(grid, mostSearched()+safetyMini()));
+};
+
+PAGES.dental = function(m){
+ const dentists=D.providers.filter(p=>/dent/i.test(p.cat||''));
+ const badge=b=>'<span class="badge2 '+b[1]+'">'+esc(b[0])+'</span>';
+ // Featured CoverCapy banner (PLACEHOLDER copy/URL — finalize from CoverCapy .md)
+ const cc='<section class="cc-feature"><div class="cc-badge">Featured · Powered by CoverCapy</div>'+
+   '<h2>Know what your dental visit should cost — before you go.</h2>'+
+   '<p>Compare fair prices, understand your coverage, and find a dentist near you. LocalProof shows the providers; CoverCapy helps you estimate the cost.</p>'+
+   '<div class="cc-cta"><a class="go" href="https://covercapy.com" target="_blank" rel="noopener">Estimate your cost</a> <a class="adcta-sm" href="'+R('/businesses')+'?cat=Healthcare">Browse dentists</a></div>'+
+   '<div class="cc-note">Placeholder — final copy, link and branding come from the CoverCapy profile.</div></section>';
+ const card=p=>'<div class="biz-card"><div class="bt"><div class="bl" style="background:'+p.c+'">'+esc(p.name[0])+'</div><div><h3><a href="business.html?id='+p.id+'">'+esc(p.name)+'</a></h3><div class="rmeta">'+esc(p.cat)+' · '+esc(p.area.split(',')[0])+'</div></div></div><div class="badges">'+p.badges.map(badge).join('')+'</div><div style="font-size:12px">'+ratingBit(p)+'</div>'+sourceLine(p)+'<div style="display:flex;gap:6px;flex-wrap:wrap">'+claimCta(p)+'<a class="adcta-sm" href="business.html?id='+p.id+'">View profile</a></div></div>';
+ const list=dentists.length?'<div class="biz-cards">'+dentists.map(card).join('')+'</div>':'<div class="empty">No dentists listed in this county yet. Try switching counties or <a href="'+R('/business/claim')+'">add one</a>.</div>';
+ const sub=[['Dental Home','/dental','act'],['Find a Dentist','/businesses?cat=Healthcare'],['Cost Estimator','https://covercapy.com'],['Emergency Dental','/businesses?cat=Healthcare'],['Insurance Help','https://covercapy.com']];
+ section(m, crumb([['Dental','']]) + subnav(sub) + pageHead('Dental in '+COUNTY_NAME[LP_COUNTY],'Find a trusted local dentist and understand what a visit should really cost.') +
+   twocol(cc+'<section class="module"><div class="module-titlebar"><h2>Dentists near you</h2><a class="more" href="'+R('/businesses')+'?cat=Healthcare">All healthcare</a></div><div style="padding:12px">'+list+'</div></section>',
+   mostSearched()+safetyMini()));
+ injectLd({"@context":"https://schema.org","@type":"CollectionPage","name":"Dental in "+COUNTY_NAME[LP_COUNTY],"about":"Local dentists and dental cost transparency"});
 };
 
 PAGES.legal = function(m){
