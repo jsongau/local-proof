@@ -600,3 +600,39 @@ body{font-size:12.5px}
 .zodi-feature .cc-note{color:#b79fce}
 .nav-feat{position:relative}
 .nav-feat::after{content:"✦";font-size:8px;color:#c9a6e6;margin-left:3px;vertical-align:top}
+
+/* ===== dental live strip + find-your-dentist + daily reading ===== */
+.cc-strip{display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--surface);border:1px solid var(--border);border-left:3px solid #1d6f8b;border-radius:4px;padding:12px 14px;margin-bottom:14px;flex-wrap:wrap}
+.cc-strip b{font-size:14px}
+.cc-strip .cc-sub{font-size:12.5px;color:var(--muted)}
+.cc-strip .cc-tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#14536b;background:#e0f0f4;border:1px solid #bfe0e8;padding:2px 7px;border-radius:10px;margin-right:8px}
+.cc-strip .go{background:#14536b;flex:none}
+.cc-strip .go:hover{background:#0f3f52}
+.dloading{padding:20px;text-align:center;color:var(--muted)}
+.fyd{padding:10px}
+.fyd .cc-tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:10px;margin-bottom:6px}
+.fyd b{display:block;font-size:13px}.fyd p{font-size:12px;color:var(--muted);margin:3px 0 8px}
+.dr{padding:10px}
+.dr-intro{font-size:12px;color:var(--muted);margin-bottom:9px}
+.dr-fields{display:flex;gap:6px;margin-bottom:8px}
+.dr-fields select{flex:1;min-width:0;border:1px solid var(--border-strong);border-radius:4px;font:inherit;font-size:12.5px;padding:8px 5px;background:#fff}
+.dr-go{width:100%;background:#3a1f5c;color:#fff;border:0;font:inherit;font-weight:700;font-size:13px;padding:9px;border-radius:4px;cursor:pointer}
+.dr-go:hover{background:#4a2270;text-decoration:none;color:#fff}
+.dr-out{margin-top:10px;padding:14px 12px;border-radius:6px;background:radial-gradient(120% 150% at 85% 0,#6a2f8f,#3a1f5c);color:#f0e8f7;text-align:center}
+.dr-hint{color:#dccfe8;font-size:12px}
+.dr-animal{font-family:var(--serif);font-size:18px;color:#fff}
+.dr-animal span{opacity:.55;margin:0 4px}
+.dr-bless{font-size:12.5px;color:#e6d9f0;font-style:italic;margin:8px 0}
+.dr-cta{display:inline-block;background:#fff;color:#4a2270;font-weight:700;font-size:12px;padding:7px 14px;border-radius:20px;margin-top:2px}
+.dr-cta:hover{text-decoration:none}
+.dr-foot{font-size:11px;color:var(--faint);margin-top:9px;text-align:center}
+.dr-foot a{color:#5b2a7a;font-weight:600}
+
+/* Business dashboard + moderation queue */
+.dposts{margin:6px 0}
+.dpost{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--hair)}
+.dpost:first-child{border-top:0}
+.newpost{margin-top:8px}
+.newpost>summary{list-style:none}
+.newpost>summary::-webkit-details-marker{display:none}
+.reasonbox textarea{font:inherit;padding:8px;border:1px solid var(--border);border-radius:4px}

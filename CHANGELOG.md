@@ -53,3 +53,10 @@
 - New Readings hub (readings.html): Zodi Animal featured banner + reading cards (Primal Animal, Daily Blessing, Compatibility, Forecast).
 - Added "Dental" and "Readings" as featured tabs in the sub-nav; home right-rail "Featured: Readings" block; footer link.
 - Zodi Animal copy/URL are PLACEHOLDERS (link https://zodianimal.com) pending confirmation.
+
+## Supabase live dentists + daily reading + blend (11 JUL 26)
+- STARTED Supabase: Dental hub now reads LIVE from CoverCapy's `dentists` table (879 SoCal: LA County 411 / Orange County 468), client-side via anon key + RLS public read, county-aware, with graceful fallback to seed.
+- Replaced "Today on LocalProof" stats with a Zodi-style "Your Daily Reading" birthdate widget (Eastern+Western animal + blessing, Powered by Zodi Animal).
+- Added "Find Your Dentist" (Powered by CoverCapy) module to the home right rail.
+- Blended cross-promos into the civic palette (dental = restrained strip, not a loud gradient); reading reveal has a tasteful cosmic card.
+- Dentist cards cite Source: CoverCapy (live), link to profile_url, show rating/reviews/specialties/open-weekends.
