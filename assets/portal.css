@@ -636,3 +636,63 @@ body{font-size:12.5px}
 .newpost>summary{list-style:none}
 .newpost>summary::-webkit-details-marker{display:none}
 .reasonbox textarea{font:inherit;padding:8px;border:1px solid var(--border);border-radius:4px}
+
+/* ==========================================================================
+   Mobile optimization + horizontal scroll lock  (added 11JUL26)
+   Locks the page to the viewport width and reflows the dense desktop layout
+   into a single readable column on phones. Wide tables scroll inside their
+   own box instead of pushing the whole page sideways.
+   ========================================================================== */
+html,body{max-width:100%;overflow-x:hidden}
+img,video,iframe{max-width:100%}
+
+@media(max-width:640px){
+  .shell{padding:0 12px}
+
+  /* utility strip: wrap instead of overflowing off-screen */
+  .utility .shell{flex-wrap:wrap;height:auto;gap:6px 12px;padding:7px 12px}
+  .utility .spacer{display:none}
+
+  /* masthead + leaderboard ad: stack, full width, no fixed 728px */
+  .masthead .shell{flex-wrap:wrap;gap:10px;padding:12px}
+  .logo .wm{font-size:21px}
+  .mast-ad{margin-left:0;width:100%!important;max-width:100%!important;min-width:0}
+  .ad-leader{height:auto;flex-wrap:wrap;gap:10px;padding:12px}
+  .ad-leader .adart{width:88px;height:52px;font-size:11px}
+  .ad-leader .adcta{margin-left:0}
+
+  /* search band: full-width controls */
+  .searchband .shell{flex-wrap:wrap;padding:9px 12px}
+  .searchband .keyword{flex:1 1 100%}
+  .searchband select{max-width:none;flex:1 1 46%}
+  .searchband .go{flex:1 1 100%}
+  .searchband .common{flex:1 1 100%;white-space:normal}
+
+  /* collapse every multi-column layout to one column */
+  .portal .grid{grid-template-columns:1fr}
+  .portal-column.left,.portal-column.right{grid-column:auto}
+  .twocol{grid-template-columns:1fr}
+  .catland{grid-template-columns:1fr}
+  .biz-cards{grid-template-columns:1fr}
+  .spec-grid{grid-template-columns:1fr}
+  .members{grid-template-columns:1fr 1fr}
+  .foot-grid{grid-template-columns:1fr 1fr}
+
+  /* wide listing tables scroll inside their own box, not the page */
+  .rtable,.otable{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap}
+
+  /* in-page search rows stack full width */
+  .vsearch{flex-direction:column;align-items:stretch}
+  .vsearch input,.vsearch select,.vsearch .go,.vsearch .newbtn{width:100%;min-width:0}
+
+  /* headings / detail pages breathe on small screens */
+  .page-head{flex-wrap:wrap;gap:8px}
+  .detail{padding:12px}
+  .detail h1{font-size:19px}
+  .detail .hero{height:150px}
+}
+
+@media(max-width:400px){
+  .members,.foot-grid{grid-template-columns:1fr}
+  .logo .wm{font-size:19px}
+}
