@@ -99,6 +99,37 @@ async function fetchBusinessOne(id){
  const a=await r.json();return a[0]||null;
 }
 
+/* ---- The Commons: live forum reads (lp_threads / posts / profiles) ---- */
+const _sh={apikey:SUPA.key,Authorization:'Bearer '+SUPA.key};
+async function fetchThreads(county,opts){
+ opts=opts||{};
+ let u=SUPA.url+'/rest/v1/lp_threads?select=id,category_id,author_id,title,is_question,accepted_post_id,reply_count,view_count,last_activity_at,created_at&county=eq.'+encodeURIComponent(county)+'&publish_status=eq.published&moderation_status=eq.approved&order=last_activity_at.desc';
+ if(opts.limit)u+='&limit='+opts.limit;
+ const r=await fetch(u,{headers:_sh}); if(!r.ok)throw new Error('threads '+r.status); return r.json();
+}
+async function fetchThreadOne(id){
+ const r=await fetch(SUPA.url+'/rest/v1/lp_threads?select=*&id=eq.'+encodeURIComponent(id)+'&publish_status=eq.published&limit=1',{headers:_sh});
+ if(!r.ok)throw new Error('thread '+r.status); const a=await r.json(); return a[0]||null;
+}
+async function fetchThreadPosts(tid){
+ const r=await fetch(SUPA.url+'/rest/v1/lp_thread_posts?select=*&thread_id=eq.'+encodeURIComponent(tid)+'&publish_status=eq.published&moderation_status=eq.approved&order=created_at.asc',{headers:_sh});
+ if(!r.ok)throw new Error('posts '+r.status); return r.json();
+}
+async function fetchProfiles(ids){
+ ids=[...new Set(ids.filter(Boolean))]; if(!ids.length)return {};
+ const r=await fetch(SUPA.url+'/rest/v1/lp_profiles?select=user_id,handle,display_name,avatar_url,bio,city,role_tags,is_business,reputation&user_id=in.('+ids.map(encodeURIComponent).join(',')+')',{headers:_sh});
+ if(!r.ok)throw new Error('profiles '+r.status); const a=await r.json(); const m={}; a.forEach(p=>m[p.user_id]=p); return m;
+}
+async function fetchCategories(){
+ const r=await fetch(SUPA.url+'/rest/v1/lp_forum_categories?select=id,slug,name,glyph,color&is_active=eq.true&order=sort_order',{headers:_sh});
+ if(!r.ok)throw new Error('cats '+r.status); return r.json();
+}
+function avatarImg(p,size){size=size||40;const nm=(p&&(p.display_name||p.handle))||'?';
+ if(p&&p.avatar_url)return '<img class="cav" style="width:'+size+'px;height:'+size+'px" src="'+esc(p.avatar_url)+'" alt="'+esc(nm)+'">';
+ return '<div class="cav" style="width:'+size+'px;height:'+size+'px;background:#16305c;font-size:'+Math.round(size*0.42)+'px">'+esc(nm[0])+'</div>';}
+function isUuid(s){return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s||'');}
+function paras(x){return (x||'').split(/\n\n+/).filter(Boolean).map(s=>'<p>'+esc(s)+'</p>').join('')||('<p>'+esc(x||'')+'</p>');}
+
 /* ---- Zodi-style daily reading (combined Eastern + Western) ---- */
 const CN_ANIMALS=['Rat','Ox','Tiger','Rabbit','Dragon','Snake','Horse','Goat','Monkey','Rooster','Dog','Pig'];
 const CN_ELEMENTS=['Metal','Metal','Water','Water','Wood','Wood','Fire','Fire','Earth','Earth'];
@@ -142,7 +173,7 @@ const FILE = {
  '/business/claim':'claim.html','/business/tools':'advertise.html','/language':'about.html','/app':'about.html',
  '/request/new':'post.html?type=request','/ask':'post.html?type=question','/home':'index.html',
  '/talent':'talent.html','/food':'food.html','/members':'members.html','/user':'user.html','/dental':'dental.html','/readings':'readings.html',
- '/dashboard':'dashboard.html','/for-business':'dashboard.html','/moderate':'moderate.html','/newsroom':'newsroom.html'
+ '/dashboard':'dashboard.html','/for-business':'dashboard.html','/moderate':'moderate.html','/newsroom':'newsroom.html','/settings':'settings.html'
 };
 const NAV2MAP = {
  'Rooms':'housing.html?tab=Rooms','Apartments':'housing.html?tab=Apartments','Roommates':'housing.html?tab=Roommates',
@@ -203,7 +234,7 @@ function searchHTML(){return '<div class="searchband"><form class="shell" id="lp
 
 function navHTML(active){const r1=D.nav1.map(n=>{const href=R('/'+(n==='Home'?'':n.toLowerCase().replace(/ /g,'-')));const on=(active&&active.toLowerCase()===n.toLowerCase())?' class="on" aria-current="page"':'';return '<a href="'+href+'"'+on+'>'+esc(n)+'</a>';}).join('');
  const r2=D.nav2.map(n=>'<a href="'+(NAV2MAP[n]||'index.html')+'">'+esc(n)+'</a>').join('')+
-   '<a href="'+R('/dental')+'" class="nav-feat">Dental</a><a href="'+R('/readings')+'" class="nav-feat">Readings</a>';
+   '<a href="'+R('/community')+'" class="nav-feat">Commons</a><a href="'+R('/dental')+'" class="nav-feat">Dental</a><a href="'+R('/readings')+'" class="nav-feat">Readings</a>';
  return '<nav class="nav" aria-label="Primary"><div class="shell r1wrap"><div class="row1">'+r1+'</div></div><div class="row2"><div class="shell">'+r2+'</div></div></nav>';}
 
 function mQuickHTML(){return '<div class="m-quickpost" aria-label="Quick post">'+
@@ -359,25 +390,81 @@ function articleLive(m){
 }
 
 PAGES.community = function(m){
- const authors=['sgv_renter','pasadena_mom','koreatown_kev','arcadia_dad','movinglady','handyandy','irvine_grad','foodie_lin','newin_LA','careful_buyer'];
- const reads=[167,842,231,1290,455,678,92,540,214,388];
- const all=D.community;
- const page=Math.max(1,parseInt(P.get('page')||'1',10));const tab=P.get('sort')||'Latest';
- const sub=[['Forum Home','/community','act'],['Housing Talk','/community?sort=Latest'],['Jobs Talk','/community?sort=Latest'],['Deals & Reviews','/community'],['Newcomers','/community'],['Tags','/community'],['Rules','/safety'],['Ask a question','/ask']];
- const tabs=[['Latest','All discussions'],['Popular','Most active'],['Unanswered','Unanswered'],['Verified answers','Verified answers']];
- const tabbar='<div class="subnav" style="margin-top:-4px">'+tabs.map(t=>'<a href="community.html?sort='+encodeURIComponent(t[0])+'"'+(t[0]===tab?' class="act"':'')+'>'+esc(t[1])+'</a>').join('')+'<a class="newbtn" href="'+R('/ask')+'" style="margin-left:auto;text-decoration:none;color:#fff">Post a discussion</a></div>';
- function filt(list){let a=list.slice();if(tab==='Popular')a.sort((x,y)=>y.replies-x.replies);else if(tab==='Unanswered')a=a.filter(q=>!q.accepted);else if(tab==='Verified answers')a=a.filter(q=>q.accepted);return a;}
- const rowsHTML=a=>a.map(q=>'<tr><td class="role"><span class="doc">▤</span><a href="thread.html?id='+q.id+'">'+esc(q.q)+'</a><div style="font-size:11px;color:var(--faint);margin-top:2px">'+esc(q.city)+' · '+esc(q.cat)+(q.accepted?' · <span style="color:var(--green);font-weight:700">Verified answer</span>':'')+'</div></td><td class="co"><a href="user.html?u='+encodeURIComponent(q.author)+'">'+esc(q.author)+'</a><div class="upd">'+esc(q.age)+' ago</div></td><td class="rr">'+q.replies+' / '+q.reads+'</td></tr>').join('');
- const filtered=filt(all);const per=12,total=Math.ceil(filtered.length/per),cur=Math.min(page,total);
- const table='<table class="rtable"><thead><tr><th>Topic</th><th>Author</th><th style="text-align:right">Replies / Reads</th></tr></thead><tbody>'+rowsHTML(filtered.slice((cur-1)*per,cur*per))+'</tbody></table>';
- const legend='<div style="display:flex;flex-wrap:wrap;gap:12px;padding:10px;background:#fff;border:1px solid var(--border);border-bottom:0;font-size:12px"><span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#5b4a7a"></span> community opinion</span><span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--green)"></span> verified fact</span><span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#1d3e73"></span> professional response</span><span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--gold)"></span> provider recommendation</span></div>';
- const main=tabbar+legend+table+pager(total,cur,'community.html');
- const askBox=mod('Ask the community','<div style="padding:10px"><p style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Get local answers before you rent, hire, or buy.</p><a href="'+R('/ask')+'" style="display:block;text-align:center;background:var(--navy);color:#fff;font-weight:700;padding:9px;border-radius:3px">Ask a question</a></div>');
- section(m, crumb([['Community','']]) + subnav(sub) + pageHead('Community Discussions','Answers labeled by kind: community opinion, verified fact, professional response, provider recommendation.') + twocol(main, askBox+talentRail()+mostSearched()+safetyMini()));
+ const board=P.get('board')||''; const tab=P.get('sort')||'Latest';
+ const BOARDS=[
+  {s:'muay-thai',g:'MT',c:'#b5341f',n:'Muay Thai & Combat',b:'Gyms, trainers, sparring, gear',t:214},
+  {s:'baseball',g:'BB',c:'#1d6f8b',n:'Baseball & Youth Sports',b:'Coaches, leagues, lessons',t:168},
+  {s:'pilates',g:'PI',c:'#5b4a7a',n:'Pilates & Fitness',b:'Studios, instructors, classes',t:132},
+  {s:'boba',g:'BO',c:'#1c7a4a',n:'Boba & Food',b:'Owners, new spots, reviews',t:301},
+  {s:'rentals',g:'RE',c:'#153a63',n:'Rentals & Airbnb',b:'Hosts, tenants, leases',t:257},
+  {s:'autos',g:'AU',c:'#b9770a',n:'Autos & Dealers',b:'Deals, transfers, shops',t:189},
+  {s:'newcomers',g:'NW',c:'#2a5b7a',n:'New to OC',b:'Getting settled, questions',t:96},
+  {s:'deals',g:'DL',c:'#7a4e05',n:'Deals & Reviews',b:'Honest local reviews',t:143}
+ ];
+ const TH=[
+  {id:'t1',board:'muay-thai',q:'Trial class review: Titan Muay Thai (Irvine) — legit or hype?',author:'sgv_mom',pro:1,replies:23,reads:1420,tag:'ans',age:'2h'},
+  {id:'t2',board:'baseball',q:'Looking for a patient hitting coach for my 10yo in North OC',author:'dad_of_three',pro:0,replies:11,reads:640,tag:'q',age:'5h'},
+  {id:'t3',board:'boba',q:'New boba spot in Fountain Valley just opened — first impressions',author:'BobaBoy',pro:0,replies:41,reads:2210,tag:'hot',age:'1h'},
+  {id:'t4',board:'rentals',q:'Airbnb host here — how are folks handling month-to-month leases?',author:'host_kelly',pro:1,replies:17,reads:980,tag:'q',age:'3h'},
+  {id:'t5',board:'autos',q:'Lease takeover 101: what I learned transferring my Civic',author:'oc_driver',pro:0,replies:29,reads:1550,tag:'ans',age:'6h'},
+  {id:'t6',board:'pilates',q:'Reformer studio near Tustin with small classes?',author:'core_kim',pro:0,replies:9,reads:410,tag:'q',age:'8h'}
+ ];
+ const MEMBERS=[
+  {u:'Titan Muay Thai',a:'TM',c:'#b5341f',role:'Verified gym · Irvine',pro:1},
+  {u:'Coach Yang',a:'CY',c:'#1d6f8b',role:'Verified coach · Fullerton',pro:1},
+  {u:'Lena · Core Pilates',a:'LP',c:'#5b4a7a',role:'Verified studio · Tustin',pro:1},
+  {u:'BobaBoy',a:'BB',c:'#1c7a4a',role:'Top reviewer',pro:0}
+ ];
+ const bn=s=>{const b=BOARDS.find(x=>x.s===s);return b?b.n:s;};
+ const hero='<div class="commons-hero"><div class="ch-plate"></div><div class="ch-in"><div class="ch-mark">LP</div><div><div class="ch-t">The Commons</div><div class="ch-s">Where OC trainers, coaches, shop owners, hosts and neighbors meet, ask, review, and help each other.</div></div><a class="ch-cta" href="'+R('/ask')+'">Ask the Commons</a></div></div>';
+ const sub=[['Commons Home','/community','act'],['Ask','/ask'],['Members','/members'],['Reviews','/businesses'],['Guidelines','/safety']];
+ const boardsHTML='<div id="boards" class="cboards">'+BOARDS.map(b=>'<a class="cboard'+(board===b.s?' on':'')+'" href="community.html?board='+b.s+'"><div class="cbg" style="background:linear-gradient(160deg,'+b.c+',rgba(0,0,0,.32))">'+b.g+'</div><div><div class="cbn">'+esc(b.n)+'</div><div class="cbb">'+esc(b.b)+'</div><div class="cbc">'+b.t+' threads</div></div></a>').join('')+'</div>';
+ const tabs=[['Latest','Latest'],['Popular','Popular'],['Unanswered','Questions'],['Verified answers','Answered']];
+ const tabbar='<div class="subnav" style="margin-top:2px">'+tabs.map(t=>'<a href="community.html?sort='+encodeURIComponent(t[0])+(board?'&board='+board:'')+'"'+(t[0]===tab?' class="act"':'')+'>'+esc(t[1])+'</a>').join('')+'<a class="newbtn" href="'+R('/ask')+'" style="margin-left:auto;text-decoration:none;color:#fff">Post a thread</a></div>';
+ let list=TH.slice();
+ if(board)list=list.filter(t=>t.board===board);
+ if(tab==='Popular')list.sort((a,b)=>b.replies-a.replies);
+ else if(tab==='Unanswered')list=list.filter(t=>t.tag==='q');
+ else if(tab==='Verified answers')list=list.filter(t=>t.tag==='ans');
+ const tg=t=>t.tag==='q'?'<span class="tag-pill">Question</span>':t.tag==='ans'?'<span class="tag-pill green">Answered</span>':'<span class="tag-pill red">Hot</span>';
+ const rows=list.length?list.map(t=>'<tr><td class="role"><span class="doc">▤</span><a href="thread.html?id='+t.id+'">'+esc(t.q)+'</a><div style="font-size:11px;color:var(--faint);margin-top:3px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">'+tg(t)+'<span>'+esc(bn(t.board))+'</span>'+(t.pro?'<span class="veri-sm">✔ Verified</span>':'')+'</div></td><td class="co"><a href="user.html?u='+encodeURIComponent(t.author)+'">'+esc(t.author)+'</a><div class="upd">'+esc(t.age)+' ago</div></td><td class="rr">'+t.replies+' / '+t.reads.toLocaleString()+'</td></tr>').join(''):'<tr><td colspan="3" style="padding:22px;text-align:center;color:var(--muted)">No threads in this board yet — be the first to post.</td></tr>';
+ const initRows=(LP_COUNTY==='oc')?'<tr><td colspan="3" style="padding:16px;color:var(--muted)">Loading live threads…</td></tr>':rows;
+ const table='<table class="rtable"><thead><tr><th>Thread'+(board?' · '+esc(bn(board)):'')+'</th><th>Author</th><th style="text-align:right">Replies / Reads</th></tr></thead><tbody id="ctbody">'+initRows+'</tbody></table>';
+ const cmain=tabbar+table;
+ const memRail=mod('Verified Members','<div class="cmembers">'+MEMBERS.map(mb=>'<a class="cmember" href="user.html?u='+encodeURIComponent(mb.u)+'"><div class="av" style="background:'+mb.c+'">'+esc(mb.a)+'</div><div><div class="nm">'+esc(mb.u)+(mb.pro?' <span class="veri-sm">✔</span>':'')+'</div><div class="role">'+esc(mb.role)+'</div></div></a>').join('')+'</div>',null,'gold');
+ const review=mod('Featured Review','<div style="padding:12px"><div style="color:var(--gold);letter-spacing:2px">★★★★★</div><p style="font-size:13px;margin:6px 0 8px;color:var(--charcoal)">“Booked a trial Muay Thai class for my son — patient coach, spotless gym, pricing exactly as posted. Signed up for the month.”</p><div style="font-size:12px;color:var(--muted)">by <b>sgv_mom</b> · reviewing <b>Titan Muay Thai</b> · transaction confirmed</div></div><div style="font-size:10.5px;color:var(--muted);padding:8px 12px;border-top:1px dashed var(--hair)">★ Reviews emit schema.org rating data → eligible for Google star snippets.</div>');
+ const pro=mod('Grow your business','<div style="padding:12px"><p style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Own a gym, studio, shop, or rental? Go Verified Pro for a badge, a promoted profile, and leads from the Commons.</p><a class="adcta-sm" href="'+R('/dashboard')+'">Get Verified Pro</a><div style="margin-top:6px;font-size:11.5px;color:var(--gold);font-weight:700">✦ from $9/mo</div></div>','/dashboard','gold');
+ const boardRail='<aside class="crail" id="crail"><div class="crail-hd"><span>Boards</span><button class="crail-x" id="crailX" title="Collapse boards" aria-label="Collapse boards">‹</button></div><nav class="crail-list"><a class="crail-item'+(!board?' on':'')+'" href="community.html"><span class="cdot" style="background:#16305c"></span>All boards</a>'+BOARDS.map(function(b){return '<a class="crail-item'+(board===b.s?' on':'')+'" href="community.html?board='+b.s+'"><span class="cdot" style="background:'+b.c+'"></span>'+esc(b.n)+'<b>'+b.t+'</b></a>';}).join('')+'</nav></aside>';
+ const rightRail='<aside class="crail-right">'+memRail+review+pro+mostSearched()+'</aside>';
+ const layout='<div class="commons-layout" id="clayout">'+boardRail+'<div class="cmain"><button class="crail-open" id="crailOpen" title="Show boards">☰ Boards</button>'+cmain+'</div>'+rightRail+'</div>';
+ section(m, crumb([['The Commons','']]) + subnav(sub) + hero + pageHead('The Commons','A healthy local community — ask, answer, review, and build a reputation your neighbors can see.') + layout);
+ (function(){var lay=document.getElementById('clayout');if(!lay)return;var rail=document.getElementById('crail'),x=document.getElementById('crailX'),op=document.getElementById('crailOpen');var col=false;try{col=localStorage.getItem('lp_rail')==='1';}catch(e){}
+  function apply(c,anim){col=c;if(c){lay.classList.add('rail-collapsed');}else{lay.classList.remove('rail-collapsed');if(anim&&rail){rail.classList.remove('opening');void rail.offsetWidth;rail.classList.add('opening');setTimeout(function(){rail.classList.remove('opening');},800);}}try{localStorage.setItem('lp_rail',c?'1':'0');}catch(e){}}
+  apply(col,false);
+  if(x)x.addEventListener('click',function(){apply(true);});
+  if(op)op.addEventListener('click',function(){apply(false,true);});
+ })();
+ if(LP_COUNTY==='oc'){
+   Promise.all([fetchThreads('oc',{limit:40}),fetchCategories()]).then(async function(res){
+     const ths=res[0],cats=res[1],cmap={}; cats.forEach(function(c){cmap[c.id]=c;});
+     let profs={}; try{profs=await fetchProfiles(ths.map(function(t){return t.author_id;}));}catch(e){}
+     let L=ths.slice();
+     if(board){const bid=(cats.find(function(c){return c.slug===board;})||{}).id; L=L.filter(function(t){return t.category_id===bid;});}
+     if(tab==='Popular')L.sort(function(a,b){return b.reply_count-a.reply_count;});
+     else if(tab==='Unanswered')L=L.filter(function(t){return t.is_question&&!t.accepted_post_id;});
+     else if(tab==='Verified answers')L=L.filter(function(t){return t.accepted_post_id;});
+     const tb=document.getElementById('ctbody'); if(!tb)return;
+     if(!L.length){tb.innerHTML='<tr><td colspan="3" style="padding:22px;text-align:center;color:var(--muted)">No threads here yet — be the first to post.</td></tr>';return;}
+     tb.innerHTML=L.map(function(t){var pa=profs[t.author_id]||{},cat=cmap[t.category_id]||{};
+       var tag=t.is_question?(t.accepted_post_id?'<span class="tag-pill green">Answered</span>':'<span class="tag-pill">Question</span>'):'<span class="tag-pill green">Listing</span>';
+       return '<tr><td class="role"><span class="doc">▤</span><a href="thread.html?id='+t.id+'">'+esc(t.title)+'</a><div style="font-size:11px;color:var(--faint);margin-top:3px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">'+tag+'<span>'+esc(cat.name||'')+'</span>'+(pa.is_business?'<span class="veri-sm">✔ Verified</span>':'')+'</div></td><td class="co"><a href="user.html?u='+encodeURIComponent(pa.handle||'')+'" style="display:flex;align-items:center;gap:7px">'+avatarImg(pa,26)+'<span>'+esc(pa.display_name||pa.handle||'Member')+'</span></a><div class="upd">'+esc(timeAgo(t.last_activity_at))+' ago</div></td><td class="rr">'+t.reply_count+' / '+(t.view_count||0)+'</td></tr>';}).join('');
+   }).catch(function(e){var tb=document.getElementById('ctbody');if(tb)tb.innerHTML='<tr><td colspan="3" style="padding:16px;color:var(--muted)">Live threads unavailable: '+esc(e.message)+'</td></tr>';});
+ }
  if(P.get('compose')||P.get('ask')) location.href=R('/ask');
 };
 
 PAGES.thread = function(m){
+ if(isUuid(P.get('id'))||P.get('src')==='commons'){ return threadLive(m); }
  const id=P.get('id')||'t1'; const q=byId(D._full.community,id)||D._full.community[0];
  const replies=(D.thread_replies[id]||[{a:'Resident',type:'community opinion',body:'Thanks for asking — following this thread.'}]);
  const rep=replies.map(r=>'<div style="border:1px solid var(--hair);border-radius:4px;padding:11px;margin-bottom:8px;background:#fff"><div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:5px"><b style="font-size:12.5px">'+esc(r.a)+'</b><span class="tag-pill '+(r.type==='verified fact'?'green':r.type==='professional response'?'':'gold')+'">'+esc(r.type)+'</span></div><p style="font-size:13px;color:var(--charcoal)">'+esc(r.body)+'</p></div>').join('');
@@ -385,6 +472,29 @@ PAGES.thread = function(m){
   twocol('<article class="detail"><span class="tag-pill">'+esc(q.city)+'</span> <span class="tag-pill">'+esc(q.cat)+'</span><h1 style="margin-top:8px">'+esc(q.q)+'</h1><div class="dmeta"><span>'+q.replies+' replies</span><span>'+esc(q.age)+'</span>'+(q.accepted?'<span class="tag-pill green">Has a verified answer</span>':'')+'</div>'+rep+'<div class="formcard" style="margin-top:12px;max-width:none"><div class="field-row"><label for="reply">Add a reply</label><textarea id="reply" placeholder="Share what you know…"></textarea></div><button class="go" data-confirm="Reply posted (demo) — sign in to publish for real.">Post reply</button><div class="guest-note">You are browsing as a guest. Sign in to post so your reply is saved to your account.</div></div></article>',
   mostSearched()+safetyMini()));
 };
+
+/* Live Commons thread view (OP + cross-replies with avatars) */
+function threadLive(m){
+ const id=P.get('id');
+ section(m, crumb([['The Commons','/community'],['Thread','']]) + '<div id="thWrap"><div class="empty">Loading thread…</div></div>');
+ const wrap=()=>document.getElementById('thWrap');
+ fetchThreadOne(id).then(async t=>{
+   if(!t){wrap().innerHTML='<div class="empty">Thread not found. <a href="community.html">Back to the Commons</a>.</div>';return;}
+   let posts=[],profs={};
+   try{posts=await fetchThreadPosts(t.id);}catch(e){}
+   try{profs=await fetchProfiles([t.author_id].concat(posts.map(p=>p.author_id)));}catch(e){}
+   const op=profs[t.author_id]||{};
+   const who=p=>'<div class="th-by">'+avatarImg(p,42)+'<div class="th-who"><div class="th-nm"><a href="user.html?u='+encodeURIComponent(p.handle||'')+'">'+esc(p.display_name||p.handle||'Member')+'</a>'+(p.is_business?' <span class="veri-sm">✔ Verified</span>':'')+'</div><div class="th-role">'+esc((p.role_tags||[]).join(' · '))+(p.reputation?' · <b>'+p.reputation+'</b> rep':'')+'</div></div></div>';
+   const opCard='<article class="detail th-op"><div class="th-headrow">'+who(op)+'<span class="th-time">'+esc(timeAgo(t.created_at))+' ago</span></div>'+
+     '<h1 style="margin:12px 0 6px">'+esc(t.title)+'</h1><div class="dmeta"><span class="tag-pill'+(t.is_question?'':' green')+'">'+(t.is_question?'Question':'Listing')+'</span><span>'+t.reply_count+' replies</span></div><div class="body">'+paras(t.body)+'</div></article>';
+   const reps=posts.map(p=>{const pa=profs[p.author_id]||{};const acc=p.is_accepted;
+     return '<div class="th-reply'+(acc?' accepted':'')+'">'+(acc?'<div class="th-acc">✔ Accepted answer</div>':'')+'<div class="th-headrow">'+who(pa)+'<span class="th-time">'+esc(timeAgo(p.created_at))+' ago</span></div><div class="th-rbody">'+paras(p.body)+'</div></div>';}).join('');
+   const replyBox='<div class="formcard" style="margin-top:14px"><div class="field-row"><label>Add a reply</label><textarea placeholder="Share what you know…"></textarea></div><button class="go" data-confirm="Sign in to post your reply.">Post reply</button><div class="guest-note">Browsing as a guest — <a href="'+R('/signin')+'">sign in</a> to reply and build your reputation.</div></div>';
+   const rail=mod('About the poster','<div class="th-poster">'+avatarImg(op,54)+'<div class="th-nm" style="margin-top:8px"><a href="user.html?u='+encodeURIComponent(op.handle||'')+'">'+esc(op.display_name||op.handle||'Member')+'</a>'+(op.is_business?' <span class="veri-sm">✔</span>':'')+'</div><div class="th-role">'+esc(op.city||'')+(op.reputation?' · '+op.reputation+' rep':'')+'</div><p style="font-size:12.5px;color:var(--muted);margin-top:8px">'+esc(op.bio||'')+'</p><a class="adcta-sm" href="user.html?u='+encodeURIComponent(op.handle||'')+'">View profile</a></div>')+mod('Community','<div style="padding:12px"><a class="adcta-sm" href="community.html">← Back to the Commons</a></div>')+safetyMini();
+   wrap().innerHTML = crumb([['The Commons','/community'],[t.is_question?'Question':'Listing','']]) + twocol(opCard+'<h2 class="th-h2">'+posts.length+' replies</h2><div class="th-replies">'+reps+'</div>'+replyBox, rail);
+   injectLd({"@context":"https://schema.org","@type":"DiscussionForumPosting","headline":t.title,"text":t.body,"datePublished":t.created_at,"commentCount":t.reply_count,"author":{"@type":"Person","name":op.display_name||op.handle}});
+ }).catch(e=>{wrap().innerHTML='<div class="empty">Couldn’t load this thread: '+esc(e.message)+'</div>';});
+}
 
 function resultList(items,render){return '<ul class="result-list" style="border:1px solid var(--border)">'+items.map(render).join('')+'</ul>';}
 
@@ -971,9 +1081,73 @@ PAGES.newsroom = function(m){
  render();
 };
 
+/* ---------- Profile & settings (auth-gated, writes lp_profiles) ---------- */
+PAGES.settings = function(m){
+ section(m, crumb([['Account','/account'],['Settings','']]) + pageHead('Profile & settings','Update your public profile, contact info, notifications, and privacy.','<span id="setUser"></span>') + '<div id="setBody"><div class="empty">Loading…</div></div>');
+ const body=()=>document.getElementById('setBody');
+ const CITIES=(D._full&&D._full.cities)||D.cities||[];
+ function toggle(id,label,sub,on){return '<label class="togrow"><span><b>'+esc(label)+'</b>'+(sub?'<span class="tosub">'+esc(sub)+'</span>':'')+'</span><input type="checkbox" id="'+id+'"'+(on?' checked':'')+' class="toggle"></label>';}
+ function val(id){var e=document.getElementById(id);return e?(e.value||'').trim():'';}
+ function chk(id){var e=document.getElementById(id);return e?e.checked:false;}
+ function ok(kind,msg,bad){const el=body().querySelector('[data-ok="'+kind+'"]');if(el){el.textContent=msg||'Saved ✓';el.style.color=bad?'var(--red)':'var(--green)';if(!bad)setTimeout(function(){el.textContent='';},2500);}}
+ async function render(){
+   const u=await currentUser();
+   if(!u){body().innerHTML='<div class="formcard" style="max-width:480px"><h3 style="margin-bottom:6px">Sign in to manage your profile</h3><p style="font-size:12.5px;color:var(--muted);margin-bottom:12px">Your profile, contact info and privacy settings live in your account.</p><a class="go" href="'+R('/signin')+'" style="text-decoration:none">Sign in</a></div>';return;}
+   const sb=await sbClient();
+   const uEl=document.getElementById('setUser');
+   if(uEl){uEl.innerHTML='<span style="font-size:12px;color:var(--muted)">'+esc(u.email)+' · <a href="#" id="setSo">Sign out</a></span>';document.getElementById('setSo').addEventListener('click',async function(e){e.preventDefault();await sb.auth.signOut();location.reload();});}
+   let p=null;
+   try{const r=await sb.from('lp_profiles').select('*').eq('user_id',u.id).limit(1);p=(r.data&&r.data[0])||null;
+     if(!p){const ins={user_id:u.id,handle:(u.email||'user').split('@')[0],display_name:(u.email||'user').split('@')[0],contact_email:u.email};const e2=await sb.from('lp_profiles').insert(ins);if(e2.error)throw e2.error;const r2=await sb.from('lp_profiles').select('*').eq('user_id',u.id).limit(1);p=(r2.data&&r2.data[0])||ins;}
+   }catch(err){body().innerHTML='<div class="empty">Could not load your profile: '+esc(err.message)+'</div>';return;}
+   const v=function(k){return esc(p[k]==null?'':p[k]);};
+   body().innerHTML=
+    '<section class="module"><div class="module-titlebar"><h2>Public profile</h2></div><div class="formcard" style="margin:0;border:0">'+
+      '<div style="display:flex;gap:14px;align-items:center;margin-bottom:10px">'+avatarImg(p,58)+'<div style="font-size:12px;color:var(--muted)">This is how you appear across the Commons.</div></div>'+
+      '<div class="field-row"><label>Display name</label><input id="s_name" type="text" value="'+v('display_name')+'"></div>'+
+      '<div class="field-row"><label>Handle (@username)</label><input id="s_handle" type="text" value="'+v('handle')+'"></div>'+
+      '<div class="field-row"><label>City</label><select id="s_city"><option value="">—</option>'+CITIES.map(function(c){return '<option'+(p.city===c.name?' selected':'')+'>'+esc(c.name)+'</option>';}).join('')+'</select></div>'+
+      '<div class="field-row"><label>Bio</label><textarea id="s_bio">'+v('bio')+'</textarea></div>'+
+      '<button class="go" data-save="profile">Save profile</button><span class="s_ok" data-ok="profile"></span></div></section>'+
+    '<section class="module"><div class="module-titlebar"><h2>Contact info</h2></div><div class="formcard" style="margin:0;border:0">'+
+      '<div class="field-row"><label>Phone</label><input id="s_phone" type="tel" value="'+v('phone')+'" placeholder="(714) 555-0100"></div>'+
+      '<div class="field-row"><label>Contact email</label><input id="s_cemail" type="email" value="'+v('contact_email')+'"></div>'+
+      '<button class="go" data-save="contact">Save contact</button><span class="s_ok" data-ok="contact"></span></div></section>'+
+    '<section class="module"><div class="module-titlebar"><h2>Notifications</h2></div><div class="formcard" style="margin:0;border:0">'+
+      toggle('s_nrep','Replies to my threads','Email me when someone replies',p.notify_replies)+
+      toggle('s_nmsg','Direct messages','Email me when I get a message',p.notify_messages)+
+      toggle('s_nmkt','Product & community updates','Occasional news from LocalProof',p.notify_marketing)+
+      '<div style="margin-top:12px"><button class="go" data-save="notify">Save notifications</button><span class="s_ok" data-ok="notify"></span></div></div></section>'+
+    '<section class="module"><div class="module-titlebar"><h2>Privacy</h2></div><div class="formcard" style="margin:0;border:0">'+
+      toggle('s_sphone','Show my phone on my profile','',p.show_phone)+
+      toggle('s_semail','Show my email on my profile','',p.show_email)+
+      '<div class="field-row" style="margin-top:10px"><label>Who can see my profile</label><select id="s_vis"><option value="public"'+(p.visibility==='public'?' selected':'')+'>Everyone (public)</option><option value="members"'+(p.visibility==='members'?' selected':'')+'>Signed-in members only</option><option value="private"'+(p.visibility==='private'?' selected':'')+'>Only me</option></select></div>'+
+      '<button class="go" data-save="privacy">Save privacy</button><span class="s_ok" data-ok="privacy"></span></div></section>'+
+    '<section class="module"><div class="module-titlebar red"><h2>Account</h2></div><div class="formcard" style="margin:0;border:0">'+
+      '<div class="field-row"><label>Login email</label><input id="s_login" type="email" value="'+esc(u.email||'')+'"></div>'+
+      '<button class="adcta-sm" data-save="login">Update login email</button><span class="s_ok" data-ok="login"></span>'+
+      '<div class="guest-note" style="margin-top:10px">Changing your login email sends a confirmation link to the new address. Your data stays put.</div></div></section>';
+   body().querySelectorAll('[data-save]').forEach(function(btn){btn.addEventListener('click',async function(){
+     const kind=btn.getAttribute('data-save');
+     try{
+       if(kind==='login'){const r=await sb.auth.updateUser({email:val('s_login')});if(r.error)throw r.error;ok('login','Check your new email to confirm');return;}
+       let patch=null;
+       if(kind==='profile')patch={display_name:val('s_name'),handle:val('s_handle')||null,city:val('s_city')||null,bio:val('s_bio')||null};
+       else if(kind==='contact')patch={phone:val('s_phone')||null,contact_email:val('s_cemail')||null};
+       else if(kind==='notify')patch={notify_replies:chk('s_nrep'),notify_messages:chk('s_nmsg'),notify_marketing:chk('s_nmkt')};
+       else if(kind==='privacy')patch={show_phone:chk('s_sphone'),show_email:chk('s_semail'),visibility:val('s_vis')};
+       btn.disabled=true;
+       const r=await sb.from('lp_profiles').update(patch).eq('user_id',u.id);if(r.error)throw r.error;
+       ok(kind);btn.disabled=false;
+     }catch(err){ok(kind,err.message||'Failed',true);btn.disabled=false;}
+   });});
+ }
+ render();
+};
+
 PAGES.account = function(m){
- const tabs='<div class="calc-tabs"><a class="on">Overview</a><a href="'+R('/messages')+'">Messages</a><a href="'+R('/saved')+'">Saved</a><a href="'+R('/post')+'">Post</a></div>';
- const cards='<div class="biz-cards">'+[['Your posts','0 active — post a rental, job, or item','/post'],['Requests','No open requests — describe a job to get quotes','/request/new'],['Saved','Nothing saved yet','/saved'],['Messages','No messages yet','/messages']].map(c=>'<div class="biz-card"><h3>'+esc(c[0])+'</h3><p style="font-size:12.5px;color:var(--muted)">'+esc(c[1])+'</p><a class="adcta-sm" href="'+R(c[2])+'">Open</a></div>').join('')+'</div>';
+ const tabs='<div class="calc-tabs"><a class="on">Overview</a><a href="'+R('/settings')+'">Settings</a><a href="'+R('/messages')+'">Messages</a><a href="'+R('/saved')+'">Saved</a></div>';
+ const cards='<div class="biz-cards">'+[['Profile & settings','Edit your name, phone, email, notifications and privacy','/settings'],['Your posts','0 active — post a rental, job, or item','/post'],['Saved','Nothing saved yet','/saved'],['Messages','No messages yet','/messages']].map(c=>'<div class="biz-card"><h3>'+esc(c[0])+'</h3><p style="font-size:12.5px;color:var(--muted)">'+esc(c[1])+'</p><a class="adcta-sm" href="'+R(c[2])+'">Open</a></div>').join('')+'</div>';
  section(m, crumb([['Account','']]) + pageHead('Your dashboard','Demonstration account view (guest). Sign in to load real data.') + tabs + cards);
 };
 
